@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>index</title>
+		<style type="text/css">
+			*{
+				margin: 0;
+				padding: 0;
+			}
+			html,body{
+				width: 100%;
+				height: 100%;
+				overflow: hidden;
+				background-color: #000;
+			}
+		</style>
+	</head>
+	<body>
+		<canvas id="canvas">您的浏览器版本过低,请升级!!!</canvas>
+		<script>
+			var canvas,
+				cxt,
+				w = window.innerWidth,
+				h = window.innerHeight,
+				particles,
+				count = 250,
+				mouseX = w/2,
+				mouseY = h/2,
+				radius = 150,
+				onOff = true;
+			var $ = obj=>document.querySelector(obj);
+			function init(){
+				canvas = $('canvas');
+				if(canvas && canvas.getContext){
+					cxt = canvas.getContext('2d');
+					//1.设置canvas宽高和浏览器一样
+					windowResize();
+					window.addEventListener('resize',windowResize);
+					window.addEventListener('mousemove',reMove);
+					//2.创建粒子属性
+					createParticles();
+					document.addEventListener('click',isOnOff)
+					//3.在canvas中创建粒子
+					loop();
+				}
+			}
+			function windowResize(){
+				w = window.innerWidth;
+				h = window.innerHeight;
+				canvas.width = w;
+				canvas.height = h;
+			}
+			function randomColor() {
+	            let r = Math.floor(Math.random()*256);
+	            let g = Math.floor(Math.random()*256);
+	            let b = Math.floor(Math.random()*256);
+	            let a = Math.random().toFixed(2);
+	            return 'rgba('+r+','+g+','+b+','+a+')';
+	        }
+			function createParticles(){
+				particles = [];//创建粒子数组(便于将来改变运动参数)
+				for(var i = 0; i < count; i++){//循环给每一个粒子添加属性
+					var particle = {
+						size:1,//大小(线宽)
+						position:{//粒子位置
+							x:mouseX,
+							y:mouseY
+						},
+						offset:{//围绕中心旋转的偏移量
+							x:0,
+							y:0
+						},
+						shift:{//跟随鼠标移动的偏移量
+							x:mouseX,
+							y:mouseY
+						},
+						speed:Math.random()*0.04+0.01,//速度(越小越好)
+						fillColor:randomColor(),//粒子填充颜色
+						orbit:radius*0.5 + (Math.random()*radius*0.5)//轨道半径(随机)
+					}
+					particles.push(particle);
+				}
+			}
+			function isOnOff() {
+	            onOff = !onOff;
+	        }
+			function loop(){
+				//绘制粒子
+				if( onOff ){
+	                cxt.clearRect(0,0,w,h);
+	            }else {
+	                cxt.fillStyle = 'rgba(0,0,0,0.05)';
+	                cxt.fillRect(0,0,w,h);
+	            }
+				
+				for(var i = 0; i < particles.length; i++){
+					var particle = particles[i];
+					var startPoint = {
+						x:particle.position.x,
+						y:particle.position.y
+					}
+					
+					//5.围绕中心点旋转
+					particle.offset.x += particle.speed;
+					particle.offset.y += particle.speed;
+					//鼠标移动时赋值跟随鼠标移动的偏移量
+					particle.shift.x += (mouseX - particle.shift.x) * (particle.speed); 
+					particle.shift.y += (mouseY - particle.shift.y) * (particle.speed);
+					
+					//4.让粒子动起来(扩散出去)(运动公式参考as3椭圆旋转公式)
+					particle.position.x = particle.shift.x + Math.cos(i+particle.offset.x) * (particle.orbit);
+					particle.position.y = particle.shift.y + Math.sin(i+particle.offset.y) * (particle.orbit);
+					
+					cxt.beginPath();
+					cxt.fillStyle = particle.fillColor;
+					cxt.strokeStyle = particle.fillColor;
+					cxt.lineWidth = particle.size;
+					cxt.moveTo(startPoint.x,startPoint.y);
+					cxt.lineTo(particle.position.x,particle.position.y);
+					cxt.stroke();
+					cxt.arc(particle.position.x,particle.position.y,particle.size/2,0,2*Math.PI,false);
+					cxt.fill();
+				}
+				requestAnimationFrame(loop);
+			}
+			//6.跟随鼠标移动
+			function reMove(e){
+				e = e || event;
+				mouseX = e.clientX - (window.innerWidth - w) * 0.5;
+				mouseY = e.clientY - (window.innerHeight - h) * 0.5;
+			}
+			window.onload = init;
+		</script>
+	</body>
+</html>

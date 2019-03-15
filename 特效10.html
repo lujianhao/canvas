@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>index</title>
+		<style type="text/css">
+			*{
+				margin: 0;
+				padding: 0;
+			}
+			html,body{
+				width: 100%;
+				height: 100%;
+				overflow: hidden;
+				-webkit-user-select: none;
+			}
+		</style>
+	</head>
+	<body>
+		<canvas></canvas>
+		
+		<script type="text/javascript">
+			document.addEventListener('DOMContentLoaded',go);
+			function go(){
+				var canvas = document.querySelector('canvas');
+				var cxt = canvas.getContext('2d');
+				canvas.style.cssText = 'width:100%;height:100%;background:#000';
+				//帧计数器
+				var frame = 0;
+				function onFrame(){
+					canvas.width = 512;
+					canvas.height = 256;
+					godraysCanvas.width = 128;
+					godraysCanvas.height = 64;
+					//设置太阳的垂直位置
+					var sunY = Math.cos(frame++ /512)*24;
+					var godraysCxt = godraysCanvas.getContext('2d');
+					//设置太阳扩散（径向渐变）
+					var emisstionGradient = godraysCxt.createRadialGradient(
+						godraysCanvas.width/2,
+						godraysCanvas.height/2 + sunY,
+						0,
+						godraysCanvas.width/2,
+						godraysCanvas.height/2 + sunY,
+						44
+					);
+					godraysCxt.fillStyle = emisstionGradient;
+					emisstionGradient.addColorStop(0.1,'#0c0804');
+					emisstionGradient.addColorStop(0.2,'#060201');
+					godraysCxt.fillRect(0,0,godraysCanvas.width,godraysCanvas.height);
+					godraysCxt.fillStyle = '#000';
+					var skyGradien = cxt.createLinearGradient(0,0,0,canvas.height);
+					skyGradien.addColorStop(0,'#2a3e55');
+					skyGradien.addColorStop(0.7,'#8d4835');
+					cxt.fillStyle = skyGradien;
+					cxt.fillRect(0,0,canvas.width,canvas.height);
+					//绘制4层山脉
+					for(var i = 0; i < 4; i++){
+						cxt.fillStyle = `hsl(7,23%,${23-i*6}%)`;
+						for(var x = canvas.width; x--;){
+							var moutainPosition = (frame+frame*i*i)/1000 + x/2000;
+							var moutainRough = i/19 - 0.5;
+							var y = 128 + i*25 + moutainHeight(moutainPosition,moutainRough)*45;
+							cxt.fillRect(x,y,1,999);
+							godraysCxt.fillRect(x/4,y/4,1,999);
+						}
+					}
+					//通过公式来封装山脉高度变换的函数
+					function moutainHeight(position,rough){
+						var frequencies = [1721,947,547,233,73,31,7];
+						return frequencies.reduce((height,freq)=>height*rough-Math.cos(freq*position),0);
+					}
+					//合成
+					cxt.globalCompositeOperation = godraysCxt.globalCompositeOperation = 'lighter';
+					
+					for(var scaleFactor = 1.07; scaleFactor < 5; scaleFactor *= scaleFactor){
+						godraysCxt.drawImage(
+							godraysCanvas,
+							(godraysCanvas.width - godraysCanvas.width*scaleFactor)/2,
+							(godraysCanvas.height - godraysCanvas.height*scaleFactor)/2 - sunY*scaleFactor + sunY,
+							godraysCanvas.width*scaleFactor,
+							godraysCanvas.height*scaleFactor
+						)
+					}
+					
+					//太阳的光射线
+					cxt.drawImage(godraysCanvas,0,0,canvas.width,canvas.height);
+					
+					requestAnimationFrame(onFrame);
+				}
+				//为了避免冲突，用克隆canvas结点来绘制别太阳
+				var godraysCanvas = canvas.cloneNode();
+				onFrame();
+			}
+		</script>
+	</body>
+</html>
